@@ -1,5 +1,9 @@
 import { useState } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import {
+  signInWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
+} from "firebase/auth";
 import { auth } from "../../firebase/firebase.init";
 import { useNavigate } from "react-router";
 
@@ -17,9 +21,27 @@ const Login = () => {
 
     signInWithEmailAndPassword(auth, email, password)
       .then(() => {
+        navigate("/");
+      })
+      .catch((err) => {
+        setError(err.message);
+      });
+  };
+
+ 
+  const handleGoogleSignIn = () => {
+    setError("");
+    const provider = new GoogleAuthProvider();
+
+    signInWithPopup(auth, provider)
+      .then((result) => {
+       
+        const user = result.user;
+        console.log("Google Sign-In Success:", user);
         navigate("/"); 
       })
       .catch((err) => {
+        console.error(err);
         setError(err.message);
       });
   };
@@ -57,6 +79,17 @@ const Login = () => {
 
             <button className="btn btn-primary w-full">Login</button>
           </form>
+
+         
+          <div className="divider">OR</div>
+
+         
+          <button
+            onClick={handleGoogleSignIn}
+            className="btn btn-outline btn-secondary w-full"
+          >
+            Sign in with Google
+          </button>
         </div>
       </div>
     </div>
