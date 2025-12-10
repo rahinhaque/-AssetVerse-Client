@@ -1,7 +1,10 @@
 // src/Auth/RegisterHR/RegisterHR.jsx
 import { useState } from "react";
+import useAxiosSecure from "../../hooks/useAxiosSecure";
 
 const RegisterHR = () => {
+  const axiosSecure = useAxiosSecure();
+
   const [formData, setFormData] = useState({
     name: "",
     companyName: "",
@@ -18,12 +21,12 @@ const RegisterHR = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
 
-    // Validation example: check all fields filled
+    // Validation: all required fields
     for (let key in formData) {
       if (!formData[key]) {
         setError(`Please enter ${key}`);
@@ -31,24 +34,32 @@ const RegisterHR = () => {
       }
     }
 
-    // Here you can send formData to backend or Firebase
-    console.log("HR Registration Data:", {
-      ...formData,
-      role: "hr",
-      packageLimit: 5,
-      currentEmployees: 0,
-      subscription: "basic",
-    });
+    try {
+      const response = await axiosSecure.post("/register/hr", {
+        ...formData,
+        role: "hr",
+        packageLimit: 5,
+        currentEmployees: 0,
+        subscription: "basic",
+      });
 
-    setSuccess("HR Registered successfully!");
-    setFormData({
-      name: "",
-      companyName: "",
-      companyLogo: "",
-      email: "",
-      password: "",
-      dateOfBirth: "",
-    });
+      if (response.data.success) {
+        setSuccess("HR Registered successfully!");
+        setFormData({
+          name: "",
+          companyName: "",
+          companyLogo: "",
+          email: "",
+          password: "",
+          dateOfBirth: "",
+        });
+      } else {
+        setError(response.data.message);
+      }
+    } catch (err) {
+      console.error(err);
+      setError(err.response?.data?.message || "Server error");
+    }
   };
 
   return (
