@@ -1,6 +1,9 @@
 import { useState } from "react";
+import useAxiosSecure from "../../hooks/useAxiosSecure";
 
 const EmployeeRegister = () => {
+  const axiosSecure = useAxiosSecure();
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -10,12 +13,13 @@ const EmployeeRegister = () => {
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
@@ -36,23 +40,34 @@ const EmployeeRegister = () => {
       return;
     }
 
-    // Final payload (ready for backend later)
     const employeeData = {
-      ...formData,
-      role: "employee",
+      name: formData.name,
+      email: formData.email,
+      password: formData.password,
+      dateOfBirth: formData.dateOfBirth,
     };
 
-    console.log("Employee Register Data:", employeeData);
+    try {
+      setLoading(true);
 
-    setSuccess("Employee registered successfully!");
+      const res = await axiosSecure.post("/register/employee", employeeData);
 
-    // Reset form
-    setFormData({
-      name: "",
-      email: "",
-      password: "",
-      dateOfBirth: "",
-    });
+      if (res.data.success) {
+        setSuccess("Employee registered successfully ✅");
+
+        setFormData({
+          name: "",
+          email: "",
+          password: "",
+          dateOfBirth: "",
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      setError(err?.response?.data?.message || "Registration failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -75,7 +90,6 @@ const EmployeeRegister = () => {
                 value={formData.name}
                 onChange={handleChange}
                 className="input input-bordered w-full"
-                placeholder="Enter your full name"
                 required
               />
             </div>
@@ -88,7 +102,6 @@ const EmployeeRegister = () => {
                 value={formData.email}
                 onChange={handleChange}
                 className="input input-bordered w-full"
-                placeholder="personal@email.com"
                 required
               />
             </div>
@@ -101,7 +114,6 @@ const EmployeeRegister = () => {
                 value={formData.password}
                 onChange={handleChange}
                 className="input input-bordered w-full"
-                placeholder="Minimum 6 characters"
                 required
               />
             </div>
@@ -118,8 +130,12 @@ const EmployeeRegister = () => {
               />
             </div>
 
-            <button type="submit" className="btn btn-primary w-full mt-2">
-              Register as Employee
+            <button
+              type="submit"
+              className="btn btn-primary w-full"
+              disabled={loading}
+            >
+              {loading ? "Registering..." : "Register as Employee"}
             </button>
           </form>
 
