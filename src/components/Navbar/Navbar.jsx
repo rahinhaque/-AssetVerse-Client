@@ -6,14 +6,14 @@ const Navbar = () => {
 
   return (
     <div className="navbar bg-base-100 shadow-md px-4 lg:px-8">
-      {/* LEFT: Logo */}
+
       <div className="navbar-start">
         <Link to="/" className="text-2xl font-bold tracking-wide">
           Asset<span className="text-primary">Verse</span>
         </Link>
       </div>
 
-      {/* CENTER: Links (Desktop) */}
+      
       <div className="navbar-center hidden lg:flex">
         <ul className="menu menu-horizontal gap-6">
           <li>
@@ -34,7 +34,7 @@ const Navbar = () => {
         </ul>
       </div>
 
-      {/* RIGHT: Mobile Menu */}
+    
       <div className="navbar-end lg:hidden">
         <div className="dropdown dropdown-end">
           <label tabIndex={0} className="btn btn-ghost text-xl">
