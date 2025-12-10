@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router";
 import Rootlayouts from "../layouts/Rootlayouts";
 import Login from "../Auth/Login/Login";
 import Error404 from "../Pages/Error/Error404"
+import RegisterHR from "../Auth/RegisterHR/RegisterHR";
 
 export const router = createBrowserRouter([
   {
@@ -14,8 +15,12 @@ export const router = createBrowserRouter([
         Component: Login,
       },
       {
-        path: "*", 
-        Component : Error404,
+        path: "/register/hr",
+        Component: RegisterHR,
+      },
+      {
+        path: "*",
+        Component: Error404,
       },
     ],
   },
