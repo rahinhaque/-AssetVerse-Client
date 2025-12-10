@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import useAxiosSecure from "../../hooks/useAxiosSecure";
+
 const Login = () => {
   const [error, setError] = useState("");
+  const [role, setRole] = useState("hr"); 
   const navigate = useNavigate();
   const axiosSecure = useAxiosSecure();
 
@@ -10,21 +12,24 @@ const Login = () => {
     e.preventDefault();
     setError("");
 
-    const form = e.target;
-    const email = form.email.value;
-    const password = form.password.value;
+    const email = e.target.email.value;
+    const password = e.target.password.value;
+
+    const endpoint = role === "hr" ? "/login/hr" : "/login/employee";
 
     try {
-      const response = await axiosSecure.post("/login/hr", { email, password });
-      if (response.data.success) {
-        localStorage.setItem("hrUser", JSON.stringify(response.data.hr));
+      const res = await axiosSecure.post(endpoint, {
+        email,
+        password,
+      });
+
+      if (res.data.success) {
+        localStorage.setItem("user", JSON.stringify(res.data.user));
+        localStorage.setItem("role", role);
         navigate("/");
-      } else {
-        setError(response.data.message);
       }
     } catch (err) {
-      console.error(err);
-      setError(err.response?.data?.message || "Server error");
+      setError(err.response?.data?.message || "Login failed");
     }
   };
 
@@ -32,38 +37,37 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-base-200">
       <div className="card w-full max-w-md shadow-xl bg-base-100">
         <div className="card-body">
-          <h2 className="text-2xl font-bold text-center mb-4">
-            Login as <span className="text-primary">HR Manager</span>
-          </h2>
+          <h2 className="text-2xl font-bold text-center">Login</h2>
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="label">Email</label>
-              <input
-                type="email"
-                name="email"
-                required
-                className="input input-bordered w-full"
-                placeholder="Enter your email"
-              />
-            </div>
+          <form onSubmit={handleLogin} className="space-y-4 mt-4">
+            <select
+              className="select select-bordered w-full"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+            >
+              <option value="hr">HR Manager</option>
+              <option value="employee">Employee</option>
+            </select>
 
-            <div>
-              <label className="label">Password</label>
-              <input
-                type="password"
-                name="password"
-                required
-                className="input input-bordered w-full"
-                placeholder="Enter your password"
-              />
-            </div>
+            <input
+              type="email"
+              name="email"
+              placeholder="Email"
+              className="input input-bordered w-full"
+              required
+            />
+
+            <input
+              type="password"
+              name="password"
+              placeholder="Password"
+              className="input input-bordered w-full"
+              required
+            />
 
             {error && <p className="text-error text-sm">{error}</p>}
 
-            <button type="submit" className="btn btn-primary w-full mt-2">
-              Login
-            </button>
+            <button className="btn btn-primary w-full">Login</button>
           </form>
         </div>
       </div>
