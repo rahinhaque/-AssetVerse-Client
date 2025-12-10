@@ -1,17 +1,12 @@
 import { useState } from "react";
-import {
-  signInWithEmailAndPassword,
-  GoogleAuthProvider,
-  signInWithPopup,
-} from "firebase/auth";
-import { auth } from "../../firebase/firebase.init";
 import { useNavigate } from "react-router";
-
+import useAxiosSecure from "../../hooks/useAxiosSecure";
 const Login = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const axiosSecure = useAxiosSecure();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
 
@@ -19,42 +14,29 @@ const Login = () => {
     const email = form.email.value;
     const password = form.password.value;
 
-    signInWithEmailAndPassword(auth, email, password)
-      .then(() => {
+    try {
+      const response = await axiosSecure.post("/login/hr", { email, password });
+      if (response.data.success) {
+        localStorage.setItem("hrUser", JSON.stringify(response.data.hr));
         navigate("/");
-      })
-      .catch((err) => {
-        setError(err.message);
-      });
-  };
-
- 
-  const handleGoogleSignIn = () => {
-    setError("");
-    const provider = new GoogleAuthProvider();
-
-    signInWithPopup(auth, provider)
-      .then((result) => {
-       
-        const user = result.user;
-        console.log("Google Sign-In Success:", user);
-        navigate("/"); 
-      })
-      .catch((err) => {
-        console.error(err);
-        setError(err.message);
-      });
+      } else {
+        setError(response.data.message);
+      }
+    } catch (err) {
+      console.error(err);
+      setError(err.response?.data?.message || "Server error");
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-base-200">
       <div className="card w-full max-w-md shadow-xl bg-base-100">
         <div className="card-body">
-          <h2 className="text-2xl font-bold text-center">
-            Login to <span className="text-primary">AssetVerse</span>
+          <h2 className="text-2xl font-bold text-center mb-4">
+            Login as <span className="text-primary">HR Manager</span>
           </h2>
 
-          <form onSubmit={handleLogin} className="space-y-4 mt-4">
+          <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="label">Email</label>
               <input
@@ -62,6 +44,7 @@ const Login = () => {
                 name="email"
                 required
                 className="input input-bordered w-full"
+                placeholder="Enter your email"
               />
             </div>
 
@@ -72,24 +55,16 @@ const Login = () => {
                 name="password"
                 required
                 className="input input-bordered w-full"
+                placeholder="Enter your password"
               />
             </div>
 
             {error && <p className="text-error text-sm">{error}</p>}
 
-            <button className="btn btn-primary w-full">Login</button>
+            <button type="submit" className="btn btn-primary w-full mt-2">
+              Login
+            </button>
           </form>
-
-         
-          <div className="divider">OR</div>
-
-         
-          <button
-            onClick={handleGoogleSignIn}
-            className="btn btn-outline btn-secondary w-full"
-          >
-            Sign in with Google
-          </button>
         </div>
       </div>
     </div>
