@@ -1,11 +1,12 @@
 import { motion } from "framer-motion";
+import { Link } from "react-router";
 import team from "../../../assets/team.jpg";
 
 const Banner = () => {
   return (
     <section className="bg-base-200 overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 py-20 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-   
+       
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
@@ -22,25 +23,31 @@ const Banner = () => {
           </p>
 
           <div className="mt-8 flex flex-wrap gap-4">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="btn btn-primary px-8"
-            >
-              Get Started
-            </motion.button>
+            
+            <Link to="/login">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="btn btn-primary px-8"
+              >
+                Get Started
+              </motion.button>
+            </Link>
 
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="btn btn-outline px-8"
-            >
-              Learn More
-            </motion.button>
+           
+            <Link to="/about">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="btn btn-outline px-8"
+              >
+                Learn More
+              </motion.button>
+            </Link>
           </div>
         </motion.div>
 
-      
+       
         <motion.div
           initial={{ opacity: 0, x: 60 }}
           animate={{ opacity: 1, x: 0 }}
@@ -53,7 +60,6 @@ const Banner = () => {
             className="rounded-2xl shadow-2xl w-full object-cover"
           />
 
-         
           <div className="absolute inset-0 rounded-2xl bg-primary/5"></div>
         </motion.div>
       </div>
