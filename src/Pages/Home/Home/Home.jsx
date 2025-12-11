@@ -5,6 +5,8 @@ import Packages from '../Packages/Packages';
 import Features from '../features/Features'
 import TestimonialsStats from '../../testimonials/Testimonials';
 import Steps from '../../steps/Steps'
+import Faqs from '../../Home/faqs/Faqs'
+import ContactCTA from '../ContactCTA/ContactCTA';
 
 const Home = () => {
   return (
@@ -15,6 +17,8 @@ const Home = () => {
       <Features></Features>
       <TestimonialsStats></TestimonialsStats>
       <Steps></Steps>
+      <Faqs></Faqs>
+      <ContactCTA></ContactCTA>
     </div>
   );
 };
