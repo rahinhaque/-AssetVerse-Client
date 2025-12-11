@@ -4,13 +4,17 @@ import Login from "../Auth/Login/Login";
 import Error404 from "../Pages/Error/Error404"
 import RegisterHR from "../Auth/RegisterHR/RegisterHR";
 import EmployeeRegister from "../Auth/RegisterEmployee/EmployeeRegister";
+import Home from "../Pages/Home/Home/Home";
 
 export const router = createBrowserRouter([
   {
     path: "/",
     Component: Rootlayouts,
     children: [
-      {},
+      {
+        index: true,
+        Component: Home,
+      },
       {
         path: "/login",
         Component: Login,
