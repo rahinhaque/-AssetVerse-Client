@@ -39,7 +39,7 @@ const AddAsset = () => {
       };
       await axiosSecure.post("/assets", payload);
       alert("Asset added");
-      navigate("/assets");
+      navigate("/dashboard/assets");
     } catch (err) {
       console.error(err);
       setError("Failed to add asset");

@@ -21,8 +21,14 @@ const DashboardLayout = () => {
       icon: <MdAssignment />,
     },
     { name: "Employee List", path: "/dashboard/employees", icon: <MdPeople /> },
+    {
+      name: "Upgrade Package",
+      path: "/dashboard/upgrade-package",
+      icon: <MdDashboard />,
+    }, // NEW
     { name: "Profile", path: "/dashboard/profile", icon: <MdDashboard /> },
   ];
+
 
   const employeeMenu = [
     { name: "My Assets", path: "/dashboard/my-assets", icon: <MdList /> },
