@@ -1,68 +1,38 @@
-import React, { useEffect, useState } from "react";
-import { AuthContext } from "./AuthContext";
-import {
-  createUserWithEmailAndPassword,
-  GoogleAuthProvider,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  signInWithPopup,
-  signOut,
-  updateProfile,
-} from "firebase/auth";
-import { auth } from "../firebase/firebase.init";
+import React, { useEffect, useState, createContext } from "react";
 
+export const AuthContext = createContext();
 
 const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(null); // <-- we need setUser for login
   const [loader, setLoader] = useState(true);
 
-  const registerUser = (email, password) => {
-    setLoader(true);
-    return createUserWithEmailAndPassword(auth, email, password);
-  };
-
-  const signInUser = (email, password) => {
-    setLoader(true);
-    return signInWithEmailAndPassword(auth, email, password);
-  };
-
-  const googleProvider = new GoogleAuthProvider();
-  const signInGoogle = () => {
-    setLoader(true);
-    return signInWithPopup(auth, googleProvider);
-  };
-
-  const signOutUser = () => {
-    setLoader(true);
-    return signOut(auth);
-  };
-
-  const updateUserProfile = (profile) => {
-    return updateProfile(auth.currentUser, profile);
-  };
-
-  //observer set-user..
+  // Load user from localStorage if available
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoader(false);
-    });
-    return () => {
-      unsubscribe();
-    };
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    if (storedUser) setUser(storedUser);
+    setLoader(false);
   }, []);
 
-  const authInfo = {
-    updateUserProfile,
-    registerUser,
-    signInUser,
-    signInGoogle,
-    user,
-    loader,
-    signOutUser,
+  const login = (userData) => {
+    setUser(userData);
+    localStorage.setItem("user", JSON.stringify(userData));
   };
 
-  return <AuthContext value={authInfo}>{children}</AuthContext>;
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem("user");
+  };
+
+  const authInfo = {
+    user,
+    setUser: login,
+    logout,
+    loader,
+  };
+
+  return (
+    <AuthContext.Provider value={authInfo}>{children}</AuthContext.Provider>
+  );
 };
 
 export default AuthProvider;

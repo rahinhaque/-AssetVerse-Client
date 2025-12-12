@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import useAxiosSecure from "../../hooks/useAxiosSecure";
+import useAuth from "../../hooks/useAuth";
 
 const Login = () => {
   const [error, setError] = useState("");
-  const [role, setRole] = useState("hr"); 
+  const [role, setRole] = useState("hr");
   const navigate = useNavigate();
   const axiosSecure = useAxiosSecure();
+  const { setUser } = useAuth();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -18,15 +20,12 @@ const Login = () => {
     const endpoint = role === "hr" ? "/login/hr" : "/login/employee";
 
     try {
-      const res = await axiosSecure.post(endpoint, {
-        email,
-        password,
-      });
+      const res = await axiosSecure.post(endpoint, { email, password });
 
       if (res.data.success) {
-        localStorage.setItem("user", JSON.stringify(res.data.user));
-        localStorage.setItem("role", role);
-        navigate("/");
+        const userData = { ...res.data.user, role }; 
+        setUser(userData); 
+        navigate("/"); 
       }
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");

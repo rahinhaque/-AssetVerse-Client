@@ -1,10 +1,14 @@
 import { createBrowserRouter } from "react-router";
 import Rootlayouts from "../layouts/Rootlayouts";
 import Login from "../Auth/Login/Login";
-import Error404 from "../Pages/Error/Error404"
+import Error404 from "../Pages/Error/Error404";
 import RegisterHR from "../Auth/RegisterHR/RegisterHR";
 import EmployeeRegister from "../Auth/RegisterEmployee/EmployeeRegister";
 import Home from "../Pages/Home/Home/Home";
+import DashboardLayouts from "../layouts/DashboardLayouts";
+import AssetList from "../Dashboard/Hr dashboard/AssetList";
+import AddAsset from "../Dashboard/Hr dashboard/AddAsset";
+import DashboardLayout from "../layouts/DashboardLayouts";
 
 export const router = createBrowserRouter([
   {
@@ -25,12 +29,24 @@ export const router = createBrowserRouter([
       },
       {
         path: "/register/employee",
-        Component: EmployeeRegister
+        Component: EmployeeRegister,
       },
       {
         path: "*",
         Component: Error404,
       },
+    ],
+  },
+  {
+    path: "/dashboard",
+    element: <DashboardLayout />,
+    children: [
+      { path: "assets", element: <AssetList /> },
+      { path: "assets/add", element: <AddAsset /> },
+      
+
+      // Employee Paths
+     
     ],
   },
 ]);

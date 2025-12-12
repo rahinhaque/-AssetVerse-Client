@@ -1,9 +1,13 @@
-// src/Auth/RegisterHR/RegisterHR.jsx
+
 import { useState } from "react";
 import useAxiosSecure from "../../hooks/useAxiosSecure";
+import { useNavigate } from "react-router";
+import useAuth from "../../hooks/useAuth";
 
 const RegisterHR = () => {
   const axiosSecure = useAxiosSecure();
+  const navigate = useNavigate();
+  const { setUser } = useAuth(); 
 
   const [formData, setFormData] = useState({
     name: "",
@@ -26,14 +30,6 @@ const RegisterHR = () => {
     setError("");
     setSuccess("");
 
-    // Validation: all required fields
-    for (let key in formData) {
-      if (!formData[key]) {
-        setError(`Please enter ${key}`);
-        return;
-      }
-    }
-
     try {
       const response = await axiosSecure.post("/register/hr", {
         ...formData,
@@ -43,19 +39,21 @@ const RegisterHR = () => {
         subscription: "basic",
       });
 
-      if (response.data.success) {
-        setSuccess("HR Registered successfully!");
-        setFormData({
-          name: "",
-          companyName: "",
-          companyLogo: "",
-          email: "",
-          password: "",
-          dateOfBirth: "",
-        });
-      } else {
-        setError(response.data.message);
+     
+      if (!response.data) {
+        setError("Unexpected server response");
+        return;
       }
+
+      const hrUser = response.data;
+
+     
+      setUser(hrUser);
+
+      setSuccess("HR Registered successfully!");
+
+     
+      navigate("/");
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.message || "Server error");
@@ -82,7 +80,6 @@ const RegisterHR = () => {
                 value={formData.name}
                 onChange={handleChange}
                 className="input input-bordered w-full"
-                placeholder="Enter your full name"
                 required
               />
             </div>
@@ -95,7 +92,6 @@ const RegisterHR = () => {
                 value={formData.companyName}
                 onChange={handleChange}
                 className="input input-bordered w-full"
-                placeholder="Your company name"
                 required
               />
             </div>
@@ -108,7 +104,6 @@ const RegisterHR = () => {
                 value={formData.companyLogo}
                 onChange={handleChange}
                 className="input input-bordered w-full"
-                placeholder="Image URL (ImgBB/Cloudinary)"
               />
             </div>
 
@@ -120,7 +115,6 @@ const RegisterHR = () => {
                 value={formData.email}
                 onChange={handleChange}
                 className="input input-bordered w-full"
-                placeholder="email@company.com"
                 required
               />
             </div>
@@ -133,7 +127,6 @@ const RegisterHR = () => {
                 value={formData.password}
                 onChange={handleChange}
                 className="input input-bordered w-full"
-                placeholder="Minimum 6 characters"
                 required
               />
             </div>

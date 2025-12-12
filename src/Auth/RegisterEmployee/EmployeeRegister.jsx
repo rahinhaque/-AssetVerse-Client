@@ -1,8 +1,12 @@
 import { useState } from "react";
 import useAxiosSecure from "../../hooks/useAxiosSecure";
+import { useNavigate } from "react-router";
+import useAuth from "../../hooks/useAuth";
 
 const EmployeeRegister = () => {
   const axiosSecure = useAxiosSecure();
+  const navigate = useNavigate();
+  const { setUser } = useAuth();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -24,7 +28,6 @@ const EmployeeRegister = () => {
     setError("");
     setSuccess("");
 
-   
     if (
       !formData.name ||
       !formData.email ||
@@ -41,10 +44,8 @@ const EmployeeRegister = () => {
     }
 
     const employeeData = {
-      name: formData.name,
-      email: formData.email,
-      password: formData.password,
-      dateOfBirth: formData.dateOfBirth,
+      ...formData,
+      role: "employee",
     };
 
     try {
@@ -52,16 +53,19 @@ const EmployeeRegister = () => {
 
       const res = await axiosSecure.post("/register/employee", employeeData);
 
-      if (res.data.success) {
-        setSuccess("Employee registered successfully ✅");
-
-        setFormData({
-          name: "",
-          email: "",
-          password: "",
-          dateOfBirth: "",
-        });
+      if (!res.data) {
+        setError("Unexpected server response");
+        return;
       }
+
+      const employeeUser = res.data; 
+
+      setSuccess("Employee registered successfully!");
+
+      
+      setUser(employeeUser);
+
+      navigate("/");
     } catch (err) {
       console.error(err);
       setError(err?.response?.data?.message || "Registration failed");
@@ -140,7 +144,7 @@ const EmployeeRegister = () => {
           </form>
 
           <p className="text-xs text-center text-gray-500 mt-4">
-            Employees are affiliated with companies after approval
+            Employees are linked to companies after approval
           </p>
         </div>
       </div>
