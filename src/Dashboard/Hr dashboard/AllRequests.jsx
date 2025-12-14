@@ -1,118 +1,127 @@
-// src/pages/hr/AllRequests.jsx
-import React, { useEffect, useState } from "react";
+import React from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import useAxiosSecure from "../../hooks/useAxiosSecure";
+import useAuth from "../../hooks/useAuth";
 
 const AllRequests = () => {
   const axiosSecure = useAxiosSecure();
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  // Fetch all requests
-  const fetchRequests = async () => {
-    try {
-      const res = await axiosSecure.get("/requests");
-      // Backend returns array of objects with fields:
-      // assetId, assetName, assetType, requesterName, requesterEmail, requestDate, status
-      setRequests(res.data || []);
-    } catch (err) {
-      console.error("Failed to fetch requests", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    data = [],
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["companyRequests", user?.companyName],
+    enabled: !!user?.companyName,
+    queryFn: async () => {
+      const res = await axiosSecure.get("/requests"); // Get all
+      return res.data.filter((req) => req.companyName === user.companyName); // Filter client-side
+    },
+  });
 
-  useEffect(() => {
-    fetchRequests();
-  }, []);
+  const approveMutation = useMutation({
+    mutationFn: async (id) => {
+      const res = await axiosSecure.patch(`/requests/${id}/approve`);
+      if (!res.data.success)
+        throw new Error(res.data.message || "Approve failed");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["companyRequests", user.companyName]);
+    },
+  });
 
-  // Approve request
-  const handleApprove = async (id) => {
-    if (!window.confirm("Are you sure you want to approve this request?"))
-      return;
-    try {
-      await axiosSecure.patch(`/requests/${id}/approve`);
-      alert("Request approved ✅");
-      fetchRequests();
-    } catch (err) {
-      console.error(err);
-      alert("Failed to approve request ❌");
-    }
-  };
+  const rejectMutation = useMutation({
+    mutationFn: async (id) => {
+      const res = await axiosSecure.patch(`/requests/${id}/reject`, {
+        hrEmail: user.email,
+      });
+      if (!res.data.success)
+        throw new Error(res.data.message || "Reject failed");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["companyRequests", user.companyName]);
+    },
+  });
 
-  // Reject request
-  const handleReject = async (id) => {
-    if (!window.confirm("Are you sure you want to reject this request?"))
-      return;
-    try {
-      await axiosSecure.patch(`/requests/${id}/reject`);
-      alert("Request rejected ❌");
-      fetchRequests();
-    } catch (err) {
-      console.error(err);
-      alert("Failed to reject request ❌");
-    }
-  };
-
-  if (loading) return <p className="p-6">Loading requests...</p>;
+  if (isLoading)
+    return <p className="text-center py-10">Loading requests...</p>;
+  if (isError)
+    return (
+      <p className="text-error text-center py-10">Error loading requests</p>
+    );
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">All Employee Requests</h2>
+    <div className="p-8">
+      <h1 className="text-3xl font-bold mb-6">All Asset Requests</h1>
 
-      {requests.length === 0 ? (
-        <p>No requests found.</p>
+      {data.length === 0 ? (
+        <p className="text-center py-20 text-xl opacity-70">
+          No pending requests for your company.
+        </p>
       ) : (
         <div className="overflow-x-auto">
           <table className="table table-zebra w-full">
             <thead>
               <tr>
-                <th>Employee</th>
                 <th>Asset</th>
-                <th>Type</th>
-                <th>Date Requested</th>
+                <th>Requester</th>
+                <th>Date</th>
                 <th>Status</th>
+                <th>Note</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {requests.map((req) => (
+              {data.map((req) => (
                 <tr key={req._id}>
-                  <td>{req.requesterName}</td>
-                  <td>{req.assetName}</td>
-                  <td>{req.assetType}</td>
+                  <td>
+                    <div>
+                      <div className="font-bold">{req.assetName}</div>
+                      <div className="text-sm opacity-70">{req.assetType}</div>
+                    </div>
+                  </td>
+                  <td>
+                    {req.requesterName}
+                    <br />
+                    <span className="badge badge-ghost badge-sm">
+                      {req.requesterEmail}
+                    </span>
+                  </td>
                   <td>{new Date(req.requestDate).toLocaleDateString()}</td>
                   <td>
                     <span
                       className={`badge ${
                         req.requestStatus === "pending"
                           ? "badge-warning"
-                          : req.requestStatus === "approved"
+                          : req.requestStatus === "Approved"
                           ? "badge-success"
                           : "badge-error"
                       }`}
                     >
-                      {req.requestStatus.charAt(0).toUpperCase() +
-                        req.requestStatus.slice(1)}
+                      {req.requestStatus}
                     </span>
                   </td>
-                  <td className="flex gap-2">
-                    {req.requestStatus === "pending" ? (
+                  <td className="max-w-xs truncate">{req.note || "-"}</td>
+                  <td>
+                    {req.requestStatus === "pending" && (
                       <>
                         <button
-                          onClick={() => handleApprove(req._id)}
-                          className="btn btn-sm btn-success"
+                          className="btn btn-success btn-xs mr-2"
+                          onClick={() => approveMutation.mutate(req._id)}
+                          disabled={approveMutation.isPending}
                         >
                           Approve
                         </button>
                         <button
-                          onClick={() => handleReject(req._id)}
-                          className="btn btn-sm btn-error"
+                          className="btn btn-error btn-xs"
+                          onClick={() => rejectMutation.mutate(req._id)}
+                          disabled={rejectMutation.isPending}
                         >
                           Reject
                         </button>
                       </>
-                    ) : (
-                      <span>—</span>
                     )}
                   </td>
                 </tr>

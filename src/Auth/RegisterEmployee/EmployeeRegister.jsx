@@ -1,6 +1,6 @@
 import { useState } from "react";
 import useAxiosSecure from "../../hooks/useAxiosSecure";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom"; // Fixed import
 import useAuth from "../../hooks/useAuth";
 
 const EmployeeRegister = () => {
@@ -13,6 +13,7 @@ const EmployeeRegister = () => {
     email: "",
     password: "",
     dateOfBirth: "",
+    companyName: "", // ← Added: Required by backend
   });
 
   const [error, setError] = useState("");
@@ -27,48 +28,46 @@ const EmployeeRegister = () => {
     e.preventDefault();
     setError("");
     setSuccess("");
+    setLoading(true);
 
+    // Validation
     if (
       !formData.name ||
       !formData.email ||
       !formData.password ||
-      !formData.dateOfBirth
+      !formData.dateOfBirth ||
+      !formData.companyName // ← Now checked
     ) {
       setError("All fields are required");
+      setLoading(false);
       return;
     }
 
     if (formData.password.length < 6) {
       setError("Password must be at least 6 characters");
+      setLoading(false);
       return;
     }
 
-    const employeeData = {
-      ...formData,
-      role: "employee",
-    };
-
     try {
-      setLoading(true);
+      const res = await axiosSecure.post("/register/employee", formData);
 
-      const res = await axiosSecure.post("/register/employee", employeeData);
+      if (res.data.success) {
+        const employeeUser = res.data.user; // ← Correct: res.data.user
 
-      if (!res.data) {
-        setError("Unexpected server response");
-        return;
+        setSuccess("Employee registered successfully!");
+        setUser(employeeUser); // Save to auth context
+        navigate("/dashboard"); // Redirect to dashboard
+      } else {
+        setError(res.data.message || "Registration failed");
       }
-
-      const employeeUser = res.data; 
-
-      setSuccess("Employee registered successfully!");
-
-      
-      setUser(employeeUser);
-
-      navigate("/");
     } catch (err) {
-      console.error(err);
-      setError(err?.response?.data?.message || "Registration failed");
+      console.error("Registration error:", err);
+      const message =
+        err.response?.data?.message ||
+        err.message ||
+        "Registration failed. Please try again.";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -78,16 +77,26 @@ const EmployeeRegister = () => {
     <div className="min-h-screen flex items-center justify-center bg-base-200 p-4">
       <div className="card w-full max-w-lg shadow-xl bg-base-100">
         <div className="card-body">
-          <h2 className="text-2xl font-bold text-center mb-4">
+          <h2 className="text-3xl font-bold text-center mb-6">
             Join as <span className="text-primary">Employee</span>
           </h2>
 
-          {error && <p className="text-error text-sm mb-2">{error}</p>}
-          {success && <p className="text-success text-sm mb-2">{success}</p>}
+          {error && (
+            <div className="alert alert-error shadow-lg">
+              <span>{error}</span>
+            </div>
+          )}
+          {success && (
+            <div className="alert alert-success shadow-lg">
+              <span>{success}</span>
+            </div>
+          )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="label">Full Name</label>
+              <label className="label">
+                <span className="label-text font-medium">Full Name</span>
+              </label>
               <input
                 type="text"
                 name="name"
@@ -99,7 +108,9 @@ const EmployeeRegister = () => {
             </div>
 
             <div>
-              <label className="label">Email</label>
+              <label className="label">
+                <span className="label-text font-medium">Email</span>
+              </label>
               <input
                 type="email"
                 name="email"
@@ -111,7 +122,24 @@ const EmployeeRegister = () => {
             </div>
 
             <div>
-              <label className="label">Password</label>
+              <label className="label">
+                <span className="label-text font-medium">Company Name</span>
+              </label>
+              <input
+                type="text"
+                name="companyName"
+                value={formData.companyName}
+                onChange={handleChange}
+                placeholder="Enter your company name"
+                className="input input-bordered w-full"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="label">
+                <span className="label-text font-medium">Password</span>
+              </label>
               <input
                 type="password"
                 name="password"
@@ -123,7 +151,9 @@ const EmployeeRegister = () => {
             </div>
 
             <div>
-              <label className="label">Date of Birth</label>
+              <label className="label">
+                <span className="label-text font-medium">Date of Birth</span>
+              </label>
               <input
                 type="date"
                 name="dateOfBirth"
@@ -136,15 +166,22 @@ const EmployeeRegister = () => {
 
             <button
               type="submit"
-              className="btn btn-primary w-full"
+              className="btn btn-primary w-full mt-6"
               disabled={loading}
             >
-              {loading ? "Registering..." : "Register as Employee"}
+              {loading ? (
+                <>
+                  <span className="loading loading-spinner"></span>
+                  Registering...
+                </>
+              ) : (
+                "Register as Employee"
+              )}
             </button>
           </form>
 
-          <p className="text-xs text-center text-gray-500 mt-4">
-            Employees are linked to companies after approval
+          <p className="text-center text-sm text-base-content opacity-70 mt-6">
+            You will be able to join your company after HR approval.
           </p>
         </div>
       </div>

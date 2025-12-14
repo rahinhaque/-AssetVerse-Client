@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import { Link } from "react-router-dom"; // <-- Fixed: Changed from "react-router" to "react-router-dom"
 import useAuth from "../../hooks/useAuth";
 
 const Navbar = () => {
@@ -13,13 +13,11 @@ const Navbar = () => {
     { name: "Logout", action: logout },
   ];
 
-
-
   const employeeDropdown = [
-    { name: "My Assets", path: "/my-assets" },
-    { name: "My Team", path: "/my-team" },
-    { name: "Request Asset", path: "/request-asset" },
-    { name: "Profile", path: "/profile" },
+    { name: "My Assets", path: "/dashboard/my-assets" }, // <-- Fixed: Added /dashboard prefix
+    { name: "My Team", path: "/dashboard/my-team" }, // <-- Fixed: Added /dashboard prefix
+    { name: "Request Asset", path: "/dashboard/request-asset" }, // <-- Fixed: Added /dashboard prefix
+    { name: "Profile", path: "/dashboard/employee-profile" }, // <-- Fixed: Added /dashboard prefix
     { name: "Logout", action: logout },
   ];
 
@@ -45,12 +43,34 @@ const Navbar = () => {
         </Link>
       </div>
 
+      {/* Always show About Us and Contact links */}
+      <div className="navbar-center hidden lg:flex">
+        <ul className="menu menu-horizontal gap-6">
+          <li>
+            <Link to="/">Home</Link>
+          </li>
+          <li>
+            <Link to="/about">About Us</Link> {/* Added: About Us link */}
+          </li>
+          <li>
+            <Link to="/contact">Contact</Link> {/* Added: Contact link */}
+          </li>
+        </ul>
+      </div>
+
+      {/* Show Dashboard button for logged-in users */}
+      {user && (
+        <div className="navbar-center lg:navbar-item hidden lg:flex">
+          <Link to="/dashboard" className="btn btn-outline btn-sm">
+            Dashboard
+          </Link>
+        </div>
+      )}
+
+      {/* Guest menu items (when not logged in) */}
       {!user && (
         <div className="navbar-center hidden lg:flex">
           <ul className="menu menu-horizontal gap-6">
-            <li>
-              <Link to="/">Home</Link>
-            </li>
             <li>
               <Link to="/register/employee">Join as Employee</Link>
             </li>
@@ -69,7 +89,7 @@ const Navbar = () => {
                 tabIndex={0}
                 className="cursor-pointer font-semibold flex items-center gap-1"
               >
-                {dropdownLabel} <span className="text-sm">▼</span> 
+                {dropdownLabel} <span className="text-sm">▼</span>
               </label>
               <ul
                 tabIndex={0}

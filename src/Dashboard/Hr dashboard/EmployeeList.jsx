@@ -1,99 +1,155 @@
-
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import useAxiosSecure from "../../hooks/useAxiosSecure";
+import useAuth from "../../hooks/useAuth";
+import { format } from "date-fns";
 
-const EmployeeList = ({ companyName, packageLimit, currentEmployees }) => {
+const EmployeeList = () => {
   const axiosSecure = useAxiosSecure();
-  const [employees, setEmployees] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [employeeToRemove, setEmployeeToRemove] = useState(null);
 
-  
-  const fetchEmployees = async () => {
-    setLoading(true);
-    try {
-      const res = await axiosSecure.get(`/hr/employees/${companyName}`);
-      if (res.data.success) setEmployees(res.data.data);
-    } catch (err) {
-      console.error("Failed to fetch employees", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: employees = [], isLoading } = useQuery({
+    queryKey: ["employees", user?.companyName],
+    enabled: !!user?.companyName,
+    queryFn: async () => {
+      const res = await axiosSecure.get(`/hr/employees/${user.companyName}`);
+      return res.data.data || [];
+    },
+  });
 
-  useEffect(() => {
-    fetchEmployees();
-  }, [companyName]);
-
-  // Remove employee
-  const handleRemove = async (email) => {
-    const confirm = window.confirm(
-      "Are you sure you want to remove this employee from your team?"
-    );
-    if (!confirm) return;
-
-    try {
+  const removeMutation = useMutation({
+    mutationFn: async (email) => {
       const res = await axiosSecure.delete(`/hr/employees/${email}`);
-      if (res.data.success) {
-        alert("Employee removed ✅");
-        fetchEmployees();
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Failed to remove employee ❌");
+      if (!res.data.success)
+        throw new Error(res.data.message || "Failed to remove");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["employees", user.companyName]);
+      setShowConfirmModal(false);
+      setEmployeeToRemove(null);
+    },
+  });
+
+  const handleRemoveClick = (emp) => {
+    setEmployeeToRemove(emp);
+    setShowConfirmModal(true);
+  };
+
+  const confirmRemove = () => {
+    if (employeeToRemove) {
+      removeMutation.mutate(employeeToRemove.employeeEmail);
     }
   };
 
-  if (loading) return <p className="p-6">Loading employees...</p>;
+  if (isLoading) {
+    return <div className="p-8 text-center">Loading employees...</div>;
+  }
+
+  const totalEmployees = employees.length;
+  const packageLimit = user?.packageLimit || 5; // Assuming HR has packageLimit in user object
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">My Employees</h2>
-      <p className="mb-4">
-        Employees used: {employees.length}/{packageLimit}
-      </p>
+    <div className="p-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">My Employee List</h1>
+        <div className="badge badge-lg badge-primary">
+          {totalEmployees}/{packageLimit} employees used
+        </div>
+      </div>
 
       {employees.length === 0 ? (
-        <p>No employees found.</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="table table-zebra w-full">
-            <thead>
-              <tr>
-                <th>Photo</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Join Date</th>
-                <th>Assets Count</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {employees.map((emp) => (
-                <tr key={emp.email}>
-                  <td>
-                    <img
-                      src={emp.photo || "https://via.placeholder.com/40"}
-                      alt={emp.name}
-                      className="w-10 h-10 rounded-full"
-                    />
-                  </td>
-                  <td>{emp.name}</td>
-                  <td>{emp.email}</td>
-                  <td>{new Date(emp.createdAt).toLocaleDateString()}</td>
-                  <td>{emp.assetsCount}</td>
-                  <td>
-                    <button
-                      className="btn btn-sm btn-error"
-                      onClick={() => handleRemove(emp.email)}
-                    >
-                      Remove
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="text-center py-20">
+          <p className="text-xl opacity-70">No employees in your team yet.</p>
+          <p className="text-sm opacity-50 mt-2">
+            Employees will appear here once they request and get approved for an
+            asset.
+          </p>
         </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {employees.map((emp) => (
+            <div key={emp.employeeEmail} className="card bg-base-100 shadow-xl">
+              <div className="card-body">
+                <div className="flex items-center space-x-4">
+                  <div className="avatar">
+                    <div className="w-16 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
+                      <img
+                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                          emp.employeeName
+                        )}&background=random`}
+                        alt={emp.employeeName}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="card-title text-lg">{emp.employeeName}</h2>
+                    <p className="text-sm opacity-70">{emp.employeeEmail}</p>
+                  </div>
+                </div>
+
+                <div className="mt-4 space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm opacity-70">Join Date</span>
+                    <span className="text-sm font-medium">
+                      {emp.affiliationDate
+                        ? format(new Date(emp.affiliationDate), "dd MMM yyyy")
+                        : "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm opacity-70">Assets Assigned</span>
+                    <span className="text-sm font-medium badge badge-secondary">
+                      {emp.assetsCount || 0}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="card-actions justify-end mt-6">
+                  <button
+                    className="btn btn-error btn-sm"
+                    onClick={() => handleRemoveClick(emp)}
+                  >
+                    Remove from Team
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <dialog className="modal modal-open">
+          <div className="modal-box">
+            <h3 className="font-bold text-lg">Remove Employee from Team?</h3>
+            <p className="py-4">
+              Are you sure you want to remove{" "}
+              <strong>{employeeToRemove?.employeeName}</strong> from your team?
+            </p>
+            <p className="text-sm opacity-70">
+              This will mark them as inactive but won't delete their account.
+            </p>
+            <div className="modal-action">
+              <button
+                className="btn"
+                onClick={() => setShowConfirmModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-error"
+                onClick={confirmRemove}
+                disabled={removeMutation.isPending}
+              >
+                {removeMutation.isPending ? "Removing..." : "Remove"}
+              </button>
+            </div>
+          </div>
+        </dialog>
       )}
     </div>
   );

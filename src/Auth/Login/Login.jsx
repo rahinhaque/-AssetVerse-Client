@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom"; // <-- Fixed import
 import useAxiosSecure from "../../hooks/useAxiosSecure";
 import useAuth from "../../hooks/useAuth";
 
@@ -23,9 +23,9 @@ const Login = () => {
       const res = await axiosSecure.post(endpoint, { email, password });
 
       if (res.data.success) {
-        const userData = { ...res.data.user, role }; 
-        setUser(userData); 
-        navigate("/"); 
+        const userData = { ...res.data.user, role };
+        setUser(userData);
+        navigate("/dashboard"); // <-- Changed to /dashboard to enter the dashboard route
       }
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
