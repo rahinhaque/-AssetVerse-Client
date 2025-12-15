@@ -10,13 +10,31 @@ const EmployeeList = () => {
   const queryClient = useQueryClient();
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [employeeToRemove, setEmployeeToRemove] = useState(null);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [assignData, setAssignData] = useState({
+    employeeEmail: "",
+    assetId: "",
+  });
 
+  // Fetch employees
   const { data: employees = [], isLoading } = useQuery({
     queryKey: ["employees", user?.companyName],
     enabled: !!user?.companyName,
     queryFn: async () => {
       const res = await axiosSecure.get(`/hr/employees/${user.companyName}`);
       return res.data.data || [];
+    },
+  });
+
+  // Fetch available assets for assignment
+  const { data: availableAssets = [] } = useQuery({
+    queryKey: ["assignableAssets", user?.email],
+    enabled: !!user?.email,
+    queryFn: async () => {
+      const res = await axiosSecure.get("/assets", {
+        params: { hrEmail: user.email },
+      });
+      return res.data.data?.filter((a) => a.availableQuantity > 0) || [];
     },
   });
 
@@ -33,6 +51,24 @@ const EmployeeList = () => {
     },
   });
 
+  const assignMutation = useMutation({
+    mutationFn: async ({ employeeEmail, assetId }) => {
+      const res = await axiosSecure.post("/hr/assign-asset", {
+        employeeEmail,
+        assetId,
+      });
+      if (!res.data.success)
+        throw new Error(res.data.message || "Assignment failed");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["employees", user.companyName]);
+      queryClient.invalidateQueries(["assignableAssets", user.email]);
+      setShowAssignModal(false);
+      setAssignData({ employeeEmail: "", assetId: "" });
+      alert("Asset assigned successfully!");
+    },
+  });
+
   const handleRemoveClick = (emp) => {
     setEmployeeToRemove(emp);
     setShowConfirmModal(true);
@@ -44,19 +80,33 @@ const EmployeeList = () => {
     }
   };
 
+  const openAssignModal = () => {
+    setAssignData({ employeeEmail: "", assetId: "" });
+    setShowAssignModal(true);
+  };
+
+  const handleAssignChange = (e) => {
+    setAssignData({ ...assignData, [e.target.name]: e.target.value });
+  };
+
   if (isLoading) {
     return <div className="p-8 text-center">Loading employees...</div>;
   }
 
   const totalEmployees = employees.length;
-  const packageLimit = user?.packageLimit || 5; // Assuming HR has packageLimit in user object
+  const packageLimit = user?.packageLimit || 5;
 
   return (
     <div className="p-8">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h1 className="text-3xl font-bold">My Employee List</h1>
-        <div className="badge badge-lg badge-primary">
-          {totalEmployees}/{packageLimit} employees used
+        <div className="flex items-center gap-4">
+          <div className="badge badge-lg badge-primary">
+            {totalEmployees}/{packageLimit} employees used
+          </div>
+          <button className="btn btn-success" onClick={openAssignModal}>
+            Assign Asset
+          </button>
         </div>
       </div>
 
@@ -121,7 +171,7 @@ const EmployeeList = () => {
         </div>
       )}
 
-      {/* Confirmation Modal */}
+      {/* Remove Confirmation Modal */}
       {showConfirmModal && (
         <dialog className="modal modal-open">
           <div className="modal-box">
@@ -148,6 +198,80 @@ const EmployeeList = () => {
                 {removeMutation.isPending ? "Removing..." : "Remove"}
               </button>
             </div>
+          </div>
+        </dialog>
+      )}
+
+      {/* Assign Asset Modal */}
+      {showAssignModal && (
+        <dialog className="modal modal-open">
+          <div className="modal-box">
+            <h3 className="font-bold text-lg">Assign Asset to Employee</h3>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                assignMutation.mutate(assignData);
+              }}
+              className="space-y-4 mt-4"
+            >
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Select Employee</span>
+                </label>
+                <select
+                  name="employeeEmail"
+                  className="select select-bordered w-full"
+                  value={assignData.employeeEmail}
+                  onChange={handleAssignChange}
+                  required
+                >
+                  <option value="">Choose an employee...</option>
+                  {employees.map((emp) => (
+                    <option key={emp.employeeEmail} value={emp.employeeEmail}>
+                      {emp.employeeName} ({emp.employeeEmail})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Select Asset</span>
+                </label>
+                <select
+                  name="assetId"
+                  className="select select-bordered w-full"
+                  value={assignData.assetId}
+                  onChange={handleAssignChange}
+                  required
+                >
+                  <option value="">Choose an asset...</option>
+                  {availableAssets.map((asset) => (
+                    <option key={asset._id} value={asset._id}>
+                      {asset.productName} ({asset.productType}) - Available:{" "}
+                      {asset.availableQuantity}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="modal-action">
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => setShowAssignModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-success"
+                  disabled={assignMutation.isPending}
+                >
+                  {assignMutation.isPending ? "Assigning..." : "Assign Asset"}
+                </button>
+              </div>
+            </form>
           </div>
         </dialog>
       )}
