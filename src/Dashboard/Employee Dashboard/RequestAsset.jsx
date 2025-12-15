@@ -5,7 +5,7 @@ import useAuth from "../../hooks/useAuth";
 
 const RequestAsset = () => {
   const axiosSecure = useAxiosSecure();
-  const { user } = useAuth(); // This gives you employee name and email
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [note, setNote] = useState("");
@@ -14,7 +14,7 @@ const RequestAsset = () => {
     queryKey: ["availableAssets"],
     queryFn: async () => {
       const res = await axiosSecure.get("/assets/available");
-      return res.data.data;
+      return res.data.data || [];
     },
   });
 
@@ -36,30 +36,73 @@ const RequestAsset = () => {
     },
   });
 
-  if (isLoading)
-    return <p className="text-center py-10">Loading available assets...</p>;
+  if (isLoading) {
+    return (
+      <div className="p-8 text-center">
+        <span className="loading loading-spinner loading-lg"></span>
+        <p className="mt-4">Loading available assets...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-bold mb-8">Request an Asset</h1>
+      <h1 className="text-3xl font-bold mb-8 text-center">Request an Asset</h1>
 
       {assets.length === 0 ? (
-        <p className="text-center py-20 text-xl opacity-70">
-          No assets available for request
-        </p>
+        <div className="text-center py-20">
+          <p className="text-2xl opacity-70">
+            No assets are currently available for request
+          </p>
+          <p className="text-lg opacity-50 mt-4">
+            Check back later or contact your HR
+          </p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {assets.map((asset) => (
-            <div key={asset._id} className="card bg-base-100 shadow-xl">
+            <div
+              key={asset._id}
+              className="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow duration-300"
+            >
+              <figure className="px-6 pt-6">
+                <img
+                  src={
+                    asset.productImage ||
+                    "https://via.placeholder.com/300x200?text=No+Image"
+                  }
+                  alt={asset.productName}
+                  className="rounded-xl h-48 w-full object-cover"
+                />
+              </figure>
+
               <div className="card-body">
-                <h2 className="card-title">{asset.productName}</h2>
-                <p className="text-sm opacity-70">Type: {asset.productType}</p>
-                <p className="text-sm">Available: {asset.availableQuantity}</p>
-                <div className="card-actions justify-end mt-4">
+                <h2 className="card-title text-lg">{asset.productName}</h2>
+
+                <div className="space-y-2 mt-2">
+                  <p className="text-sm">
+                    <span className="font-medium">Type:</span>{" "}
+                    <span className="badge badge-outline badge-sm">
+                      {asset.productType}
+                    </span>
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-medium">Available:</span>{" "}
+                    <span className="badge badge-success badge-sm">
+                      {asset.availableQuantity}
+                    </span>
+                  </p>
+                  <p className="text-sm opacity-70">
+                    Added by: {asset.hrEmail}
+                  </p>
+                </div>
+
+                <div className="card-actions justify-end mt-6">
                   <button
-                    className="btn btn-primary btn-sm"
+                    className="btn btn-primary"
                     onClick={() => {
                       setSelectedAsset(asset);
+                      setNote("");
                       document.getElementById("request_modal").showModal();
                     }}
                   >
@@ -72,24 +115,32 @@ const RequestAsset = () => {
         </div>
       )}
 
-      {/* Modal */}
-      <dialog id="request_modal" className="modal">
+      {/* Request Modal */}
+      <dialog id="request_modal" className="modal modal-bottom sm:modal-middle">
         <div className="modal-box">
-          <h3 className="font-bold text-lg mb-4">
-            Request: {selectedAsset?.productName}
-          </h3>
-          <p className="mb-4">Add an optional note:</p>
-          <textarea
-            className="textarea textarea-bordered w-full"
-            rows="4"
-            placeholder="Why do you need this asset?"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-          ></textarea>
+          <h3 className="font-bold text-2xl mb-2">Request Asset</h3>
+          <p className="text-lg mb-6">
+            <strong>{selectedAsset?.productName}</strong> (
+            {selectedAsset?.productType})
+          </p>
 
-          <div className="modal-action">
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text font-medium">
+                Additional Note (Optional)
+              </span>
+            </label>
+            <textarea
+              className="textarea textarea-bordered h-32 resize-none"
+              placeholder="Why do you need this asset? Any special requirements?"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            ></textarea>
+          </div>
+
+          <div className="modal-action mt-8">
             <button
-              className="btn"
+              className="btn btn-ghost"
               onClick={() => document.getElementById("request_modal").close()}
             >
               Cancel
@@ -112,10 +163,22 @@ const RequestAsset = () => {
               }}
               disabled={requestMutation.isPending}
             >
-              {requestMutation.isPending ? "Submitting..." : "Submit Request"}
+              {requestMutation.isPending ? (
+                <>
+                  <span className="loading loading-spinner"></span>
+                  Submitting...
+                </>
+              ) : (
+                "Submit Request"
+              )}
             </button>
           </div>
         </div>
+
+        {/* Close modal when clicking outside */}
+        <form method="dialog" className="modal-backdrop">
+          <button>close</button>
+        </form>
       </dialog>
     </div>
   );

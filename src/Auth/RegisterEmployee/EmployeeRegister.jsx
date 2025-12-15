@@ -1,6 +1,7 @@
-import { useState } from "react";
+import React, { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import useAxiosSecure from "../../hooks/useAxiosSecure";
-import { useNavigate } from "react-router-dom"; // Fixed import
+import { useNavigate } from "react-router-dom";
 import useAuth from "../../hooks/useAuth";
 
 const EmployeeRegister = () => {
@@ -13,7 +14,6 @@ const EmployeeRegister = () => {
     email: "",
     password: "",
     dateOfBirth: "",
-    companyName: "", // ← Added: Required by backend
   });
 
   const [error, setError] = useState("");
@@ -35,8 +35,7 @@ const EmployeeRegister = () => {
       !formData.name ||
       !formData.email ||
       !formData.password ||
-      !formData.dateOfBirth ||
-      !formData.companyName // ← Now checked
+      !formData.dateOfBirth
     ) {
       setError("All fields are required");
       setLoading(false);
@@ -53,11 +52,11 @@ const EmployeeRegister = () => {
       const res = await axiosSecure.post("/register/employee", formData);
 
       if (res.data.success) {
-        const employeeUser = res.data.user; // ← Correct: res.data.user
+        const employeeUser = res.data.user;
 
         setSuccess("Employee registered successfully!");
-        setUser(employeeUser); // Save to auth context
-        navigate("/dashboard"); // Redirect to dashboard
+        setUser(employeeUser);
+        navigate("/"); // or "/dashboard" based on your route
       } else {
         setError(res.data.message || "Registration failed");
       }
@@ -82,12 +81,12 @@ const EmployeeRegister = () => {
           </h2>
 
           {error && (
-            <div className="alert alert-error shadow-lg">
+            <div className="alert alert-error shadow-lg mb-4">
               <span>{error}</span>
             </div>
           )}
           {success && (
-            <div className="alert alert-success shadow-lg">
+            <div className="alert alert-success shadow-lg mb-4">
               <span>{success}</span>
             </div>
           )}
@@ -103,6 +102,7 @@ const EmployeeRegister = () => {
                 value={formData.name}
                 onChange={handleChange}
                 className="input input-bordered w-full"
+                placeholder="John Doe"
                 required
               />
             </div>
@@ -117,21 +117,7 @@ const EmployeeRegister = () => {
                 value={formData.email}
                 onChange={handleChange}
                 className="input input-bordered w-full"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="label">
-                <span className="label-text font-medium">Company Name</span>
-              </label>
-              <input
-                type="text"
-                name="companyName"
-                value={formData.companyName}
-                onChange={handleChange}
-                placeholder="Enter your company name"
-                className="input input-bordered w-full"
+                placeholder="john@example.com"
                 required
               />
             </div>
@@ -146,6 +132,7 @@ const EmployeeRegister = () => {
                 value={formData.password}
                 onChange={handleChange}
                 className="input input-bordered w-full"
+                placeholder="At least 6 characters"
                 required
               />
             </div>
@@ -166,7 +153,7 @@ const EmployeeRegister = () => {
 
             <button
               type="submit"
-              className="btn btn-primary w-full mt-6"
+              className="btn btn-primary w-full mt-8"
               disabled={loading}
             >
               {loading ? (
@@ -181,7 +168,8 @@ const EmployeeRegister = () => {
           </form>
 
           <p className="text-center text-sm text-base-content opacity-70 mt-6">
-            You will be able to join your company after HR approval.
+            You will be able to join your company after an HR approves your
+            asset request.
           </p>
         </div>
       </div>
